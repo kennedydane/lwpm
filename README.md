@@ -30,7 +30,7 @@ Built with [Textual](https://textual.textualize.io/) for the TUI,
 - [Development](#development)
 - [Security Considerations & Limitations](#security-considerations--limitations)
 - [Out of Scope (v1)](#out-of-scope-v1)
-- [Wordlist & Licensing](#wordlist--licensing)
+- [License](#license)
 - [Acknowledgements](#acknowledgements)
 
 ---
@@ -362,17 +362,22 @@ By design, v1 does **not** include: export/import or encrypted backup files,
 encrypted entry names, multiple vaults/profiles, or any network, sync, or
 browser-extension integration.
 
-## Wordlist & Licensing
+## License
 
-The project itself does not yet ship a `LICENSE` file — add one before
-distributing.
+lwpm is released under the [MIT License](LICENSE).
 
-⚠️ **Note on the bundled wordlist:** `src/lwpm/data/wordlist.txt` is derived from
-the GPL-licensed `british-english-small` dictionary (a descendant of SCOWL).
-Redistributing words derived from it may carry GPL implications. If you intend
-to distribute lwpm under a permissive license, consider swapping in the
-[EFF large wordlist](https://www.eff.org/dice) (CC-BY-3.0, 7776 words), which the
-original specification called for — it is a drop-in replacement.
+The bundled wordlist (`src/lwpm/data/wordlist.txt`) is derived from **SCOWL**
+(Spell Checker Oriented Word Lists) via the Debian `wbritish-small` package.
+SCOWL and its constituent sources are distributed under **permissive and
+public-domain terms** (not copyleft) — the only obligation is to retain their
+copyright notices, which are reproduced in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). These terms are compatible
+with lwpm's MIT license and place no restriction on commercial or closed-source
+redistribution.
+
+> An alternative is the [EFF large wordlist](https://www.eff.org/dice)
+> (CC-BY-3.0, 7776 words) that the original specification called for; it is a
+> drop-in replacement if you prefer its curation.
 
 ## Acknowledgements
 
