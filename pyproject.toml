@@ -1,0 +1,36 @@
+[project]
+name = "lwpm"
+version = "0.1.0"
+description = "lwpm — a single-user, local, terminal-based password manager backed by an encrypted SQLite vault."
+readme = "README.md"
+authors = [
+    { name = "Dane Kennedy", email = "kennedy.dane@gmail.com" }
+]
+requires-python = ">=3.14.5"
+dependencies = [
+    "cryptography>=49.0.0",
+    "pyperclip>=1.11.0",
+    "textual>=8.2.7",
+]
+
+[project.scripts]
+lwpm = "lwpm.app:main"
+
+[build-system]
+requires = ["uv_build>=0.11.18,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["lwpm"]
