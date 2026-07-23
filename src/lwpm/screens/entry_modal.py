@@ -85,7 +85,7 @@ class EntryModal(ModalScreen[bool]):
     def _int_value(self, widget_id: str, default: int) -> int:
         try:
             return int(self.query_one(widget_id, Input).value)
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             return default
 
     # -- generator ------------------------------------------------------
