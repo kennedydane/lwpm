@@ -50,3 +50,8 @@
 - Verified all pre-commit hooks and 63 unit tests (with 96% coverage) pass cleanly.
 [2026-07-23T12:43:36+02:00] USER_INPUT: Please commit and push
 [2026-07-23T12:43:40+02:00] DECISION: Committing and pushing changes to origin/feature/add-ruff-pre-commit-github-action.
+[2026-07-23T12:47:53+02:00] USER_INPUT: Should the CI post some kind of coverage info when it completes? Think I've seen something like that before in other places…
+[2026-07-23T12:48:30+02:00] DECISION: Configured GitHub Action workflow to post PR sticky coverage comments and GitHub Job Summary tables.
+- Added `pull-requests: write` permissions to `.github/workflows/lint.yml`.
+- Added `$GITHUB_STEP_SUMMARY` markdown coverage table output.
+- Added `marocchino/sticky-pull-request-comment@v2` step to automatically comment on pull requests with a sticky markdown coverage table.

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   lint:
     name: Lint
@@ -55,3 +59,22 @@ jobs:
 
       - name: Run Pytest with coverage
         run: uv run pytest --cov=lwpm --cov-report=term-missing --cov-report=xml
+
+      - name: Add Coverage to Step Summary
+        if: always()
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+      - name: Prepare PR Coverage Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "### 📊 Test Coverage Report" > coverage_comment.md
+          echo "" >> coverage_comment.md
+          uv run coverage report --format=markdown >> coverage_comment.md
+
+      - name: Post PR Coverage Comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: coverage_comment.md
