@@ -40,3 +40,13 @@
 - Added `"Q"` (`flake8-quotes`) to `[tool.ruff.lint] select`.
 - Formatted repository codebase with `uv run ruff format .` and fixed lint rules.
 - Verified all pre-commit hooks (`uv run pre-commit run --all-files`) and pytest unit tests (`uv run pytest`) pass cleanly.
+[2026-07-23T12:38:04+02:00] USER_INPUT: Please do a code review of the current PR
+[2026-07-23T12:40:50+02:00] DECISION: Performed comprehensive code review of branch feature/add-ruff-pre-commit-github-action against origin/main. Inspected pre-commit hooks, GitHub action workflow, Ruff config, pyproject.toml, and code formatting changes across all source files and tests.
+[2026-07-23T12:41:51+02:00] USER_INPUT: Can we add test coverage information? Don't know if this belongs in the pre commit hook and/or the github action/CI?
+[2026-07-23T12:43:00+02:00] DECISION: Configured test coverage reporting in CI and pyproject.toml options.
+- Explained best practice: coverage belongs in CI / GitHub Actions and local pytest runs, not pre-commit hooks (to avoid slowing down git commits).
+- Added `--cov=lwpm --cov-report=term-missing` to `addopts` in `pyproject.toml`.
+- Added `Test & Coverage` job in `.github/workflows/lint.yml` GitHub Action workflow running `uv run pytest --cov=lwpm --cov-report=term-missing --cov-report=xml`.
+- Verified all pre-commit hooks and 63 unit tests (with 96% coverage) pass cleanly.
+[2026-07-23T12:43:36+02:00] USER_INPUT: Please commit and push
+[2026-07-23T12:43:40+02:00] DECISION: Committing and pushing changes to origin/feature/add-ruff-pre-commit-github-action.
