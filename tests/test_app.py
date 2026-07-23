@@ -69,6 +69,10 @@ async def test_first_run_initialization_unlocks_to_vault_screen():
         assert app.vault.is_initialized(), "vault should be initialized"
         assert app.key is not None, "key should be held in memory"
         assert isinstance(app.screen, VaultScreen), "should have switched to VaultScreen"
+        assert (
+            app.screen.focused is not None and app.screen.focused.id == "names"
+        ), "ListView '#names' should have focus on VaultScreen upon app startup"
+
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +254,100 @@ async def test_lock_zeroes_key_and_shows_auth_screen():
 
         assert app.key is None, "key must be zeroed after lock"
         assert isinstance(app.screen, AuthScreen), "should be on AuthScreen after lock"
+
+
+# ---------------------------------------------------------------------------
+# Test 5b: Lock and unlock preserves selected entry and focuses names list
+# ---------------------------------------------------------------------------
+
+
+async def test_unlock_restores_selection_and_focuses_names_list():
+    """
+    When unlocking after a session lock, focus should automatically be on the
+    #names ListView, and the previously selected entry should remain selected.
+    """
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        # Add two entries: "alpha" and "beta"
+        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
+        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+
+        vault_screen = app.screen
+        assert isinstance(vault_screen, VaultScreen)
+        vault_screen.refresh_list(select="beta")
+        await pilot.pause()
+
+        assert vault_screen.selected_name == "beta"
+
+        # Lock the app
+        app.lock()
+        await pilot.pause()
+
+        assert isinstance(app.screen, AuthScreen)
+
+        # Unlock with master password
+        pw_input = app.screen.query_one("#password", Input)
+        pw_input.value = MASTER_PW
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Now on VaultScreen
+        new_vault_screen = app.screen
+        assert isinstance(new_vault_screen, VaultScreen)
+
+        # 1. Selected entry should still be "beta"
+        assert new_vault_screen.selected_name == "beta", "selection should be restored to 'beta'"
+
+        # 2. Focused widget should be the ListView (#names)
+        assert new_vault_screen.focused is not None
+        assert new_vault_screen.focused.id == "names", "ListView '#names' should have focus"
+
+
+async def test_copy_password_immediately_after_unlock_without_tab(monkeypatch):
+    """
+    After unlocking, pressing 'c' immediately copies the selected entry's password
+    without requiring <tab> or scrolling.
+    """
+    copied: list[str] = []
+    monkeypatch.setattr("lwpm.app.pyperclip.copy", lambda val: copied.append(val))
+
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
+        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+
+        vault_screen = app.screen
+        assert isinstance(vault_screen, VaultScreen)
+        vault_screen.refresh_list(select="beta")
+        await pilot.pause()
+
+        app.lock()
+        await pilot.pause()
+
+        # Unlock
+        pw_input = app.screen.query_one("#password", Input)
+        pw_input.value = MASTER_PW
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+
+        # Press 'c' immediately without pressing <tab> or moving cursor
+        await pilot.press("c")
+        await pilot.pause()
+
+        assert len(copied) >= 1, "pyperclip.copy should have been called"
+        assert copied[-1] == "pw-beta", f"expected 'pw-beta', got {copied[-1]!r}"
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -464,3 +562,54 @@ async def test_generate_random_password_populates_field():
         await pilot.pause()
 
         assert len(modal.query_one("#password", Input).value) == 24
+
+
+# ---------------------------------------------------------------------------
+# Test 11: Closing search restores pre-search selection
+# ---------------------------------------------------------------------------
+
+
+async def test_closing_search_restores_pre_search_selection():
+    """
+    When search mode is entered with an entry selected, typing a search query
+    filters the list. When search is closed, the pre-search selection should be
+    restored, rather than keeping the selection produced by search filtering.
+    """
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
+        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+
+        vault_screen = app.screen
+        assert isinstance(vault_screen, VaultScreen)
+        vault_screen.refresh_list(select="beta")
+        await pilot.pause()
+
+        assert vault_screen.selected_name == "beta"
+
+        # Open search mode
+        vault_screen.action_search()
+        await pilot.pause()
+        assert vault_screen.query_one("#search", Input).display is True
+
+        # Type 'alpha' in search input
+        search_input = vault_screen.query_one("#search", Input)
+        search_input.value = "alpha"
+        await pilot.pause()
+
+        # The filtered list now shows 'alpha' and highlights 'alpha'
+        assert vault_screen.selected_name == "alpha"
+
+        # Close search mode
+        vault_screen.action_search()
+        await pilot.pause()
+        assert vault_screen.query_one("#search", Input).display is False
+
+        # Selection must be restored to 'beta' (the pre-search selection)
+        assert vault_screen.selected_name == "beta"
+        assert app.last_selected_name == "beta"
+

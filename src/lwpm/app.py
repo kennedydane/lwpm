@@ -43,6 +43,7 @@ class LwpmApp(App):
         #: The in-memory Fernet key. None means locked.
         self.key: bytes | None = None
         self.salt: bytes | None = None
+        self.last_selected_name: str | None = None
         self._key_timer = None
         self._clip_timer = None
 
