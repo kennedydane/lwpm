@@ -562,3 +562,54 @@ async def test_generate_random_password_populates_field():
         await pilot.pause()
 
         assert len(modal.query_one("#password", Input).value) == 24
+
+
+# ---------------------------------------------------------------------------
+# Test 11: Closing search restores pre-search selection
+# ---------------------------------------------------------------------------
+
+
+async def test_closing_search_restores_pre_search_selection():
+    """
+    When search mode is entered with an entry selected, typing a search query
+    filters the list. When search is closed, the pre-search selection should be
+    restored, rather than keeping the selection produced by search filtering.
+    """
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
+        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+
+        vault_screen = app.screen
+        assert isinstance(vault_screen, VaultScreen)
+        vault_screen.refresh_list(select="beta")
+        await pilot.pause()
+
+        assert vault_screen.selected_name == "beta"
+
+        # Open search mode
+        vault_screen.action_search()
+        await pilot.pause()
+        assert vault_screen.query_one("#search", Input).display is True
+
+        # Type 'alpha' in search input
+        search_input = vault_screen.query_one("#search", Input)
+        search_input.value = "alpha"
+        await pilot.pause()
+
+        # The filtered list now shows 'alpha' and highlights 'alpha'
+        assert vault_screen.selected_name == "alpha"
+
+        # Close search mode
+        vault_screen.action_search()
+        await pilot.pause()
+        assert vault_screen.query_one("#search", Input).display is False
+
+        # Selection must be restored to 'beta' (the pre-search selection)
+        assert vault_screen.selected_name == "beta"
+        assert app.last_selected_name == "beta"
+

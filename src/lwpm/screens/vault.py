@@ -40,6 +40,7 @@ class VaultScreen(Screen):
 
     def on_mount(self) -> None:
         self._names: list[str] = []
+        self._pre_search_selected_name: str | None = None
         self.query_one("#search", Input).display = False
         self.refresh_list(select=getattr(self.app, "last_selected_name", None))
         self.query_one("#names", ListView).focus()
@@ -78,7 +79,7 @@ class VaultScreen(Screen):
             self._show_detail(self.selected_name)
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        if event.input.id == "search":
+        if event.input.id == "search" and event.input.display:
             self.refresh_list()
 
     # -- detail rendering -----------------------------------------------
@@ -163,10 +164,15 @@ class VaultScreen(Screen):
         search = self.query_one("#search", Input)
         search.display = not search.display
         if search.display:
+            self._pre_search_selected_name = (
+                self.selected_name or getattr(self.app, "last_selected_name", None)
+            )
             search.focus()
         else:
+            pre_search = self._pre_search_selected_name
+            self._pre_search_selected_name = None
             search.value = ""
-            self.refresh_list(select=getattr(self.app, "last_selected_name", None))
+            self.refresh_list(select=pre_search)
             self.query_one("#names", ListView).focus()
 
     def action_lock(self) -> None:

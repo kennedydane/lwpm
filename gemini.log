@@ -16,4 +16,11 @@
 [2026-07-23T11:36:57+02:00] USER_INPUT: Please make sure that when the app starts, the focus also starts in the password lists (rather than having to first press tab). Or did you already do that?
 [2026-07-23T11:37:24+02:00] DECISION: Confirmed and added explicit test assertion in `test_first_run_initialization_unlocks_to_vault_screen` confirming that whenever `VaultScreen` is entered upon initial app launch / unlock, focus starts directly in `#names` (`ListView`). All 62 unit tests verified.
 [2026-07-23T11:37:49+02:00] USER_INPUT: Great. Please checkout a feature branch. Commit, push and create a PR.
-[2026-07-23T11:38:00+02:00] DECISION: Creating feature branch `feature/preserve-selection-and-focus`, committing changes, pushing to remote, and opening PR.
+[2026-07-23T11:54:29+02:00] USER_INPUT: Please consider PR comments.
+[2026-07-23T11:56:55+02:00] DECISION: Addressed PR #1 review comment "[P1] Preserve the pre-search selection before refreshing".
+- Updated `VaultScreen` (`src/lwpm/screens/vault.py`):
+  - Added `self._pre_search_selected_name` to preserve the active selection prior to entering search mode.
+  - Updated `action_search()` to record `_pre_search_selected_name` when opening search and restore it via `refresh_list(select=pre_search)` when search is toggled off.
+  - Updated `on_input_changed()` to only trigger `refresh_list()` when search input is displayed (`event.input.display`).
+- Added unit test `test_closing_search_restores_pre_search_selection` in `tests/test_app.py`.
+- Verified all 63 unit tests pass cleanly (`uv run pytest`).
