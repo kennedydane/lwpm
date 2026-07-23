@@ -24,9 +24,11 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.6.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
+    "ruff>=0.15.22",
 ]
 
 [tool.pytest.ini_options]
@@ -36,3 +38,16 @@ addopts = "-q"
 
 [tool.coverage.run]
 source = ["lwpm"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "Q"]
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.format]
+quote-style = "single"

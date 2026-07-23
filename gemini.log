@@ -24,3 +24,19 @@
   - Updated `on_input_changed()` to only trigger `refresh_list()` when search input is displayed (`event.input.display`).
 - Added unit test `test_closing_search_restores_pre_search_selection` in `tests/test_app.py`.
 - Verified all 63 unit tests pass cleanly (`uv run pytest`).
+[2026-07-23T12:21:00+02:00] USER_INPUT: Please add a pre-commit hook to run `ruff` for linting etc. Then also add a github action to do the same lint checks.
+[2026-07-23T12:21:00+02:00] DECISION: Added ruff and pre-commit to project dev dependencies and configured linting & formatting.
+- Added `ruff` and `pre-commit` to dev dependencies in `pyproject.toml` via `uv add --dev ruff pre-commit`.
+- Configured `[tool.ruff]` and `[tool.ruff.lint]` in `pyproject.toml`.
+- Created `.pre-commit-config.yaml` containing ruff linter (`ruff`), ruff formatter (`ruff-format`), and standard pre-commit file checks.
+- Created `.github/workflows/lint.yml` GitHub Action workflow running `uv run ruff check .` and `uv run ruff format --check .`.
+- Executed `uv run ruff check --fix .` and `uv run ruff format .` across repository.
+- Fixed unparenthesized exception tuple syntax error in `src/lwpm/screens/entry_modal.py`.
+- Installed pre-commit hooks into `.git/hooks/pre-commit` and verified `uv run pre-commit run --all-files` passes cleanly.
+- Verified all 63 pytest unit tests pass cleanly (`uv run pytest`).
+[2026-07-23T12:22:10+02:00] USER_INPUT: Note for linting I want single quotes
+[2026-07-23T12:22:10+02:00] DECISION: Configured Ruff to prefer single quotes for formatting and linting rules.
+- Configured `[tool.ruff.format] quote-style = "single"` and `[tool.ruff.lint.flake8-quotes] inline-quotes = "single"` in `pyproject.toml`.
+- Added `"Q"` (`flake8-quotes`) to `[tool.ruff.lint] select`.
+- Formatted repository codebase with `uv run ruff format .` and fixed lint rules.
+- Verified all pre-commit hooks (`uv run pre-commit run --all-files`) and pytest unit tests (`uv run pytest`) pass cleanly.
