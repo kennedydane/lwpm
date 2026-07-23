@@ -321,7 +321,7 @@ uv run pytest -q tests/test_crypto.py::TestDeriveKey   # one class
 uv run pytest --cov=lwpm --cov-report=term-missing     # with coverage
 ```
 
-The suite is **60 tests** (currently ~**87%** coverage, with the
+The suite is **62 tests** (currently ~**87%** coverage, with the
 security-critical core at ~100%):
 
 | File                  | Tests | Focus                                                   |
@@ -329,7 +329,7 @@ security-critical core at ~100%):
 | `test_crypto.py`      | 19    | KDF determinism, round-trip, tamper detection, verification |
 | `test_storage.py`     | 17    | CRUD, name uniqueness, search, **re-key + rollback**    |
 | `test_generator.py`   | 13    | word count, length, char classes, sourced from `secrets`, bundled list |
-| `test_app.py`         | 11    | Textual `Pilot` smoke tests: init/unlock, add, copy, lock, change-pw |
+| `test_app.py`         | 13    | Textual `Pilot` smoke tests: init/unlock, add, copy, lock, change-pw, selection/focus |
 
 Testing notes:
 - Core logic is built test-first (TDD); UI screens are covered by Textual
