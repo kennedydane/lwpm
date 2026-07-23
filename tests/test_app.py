@@ -7,7 +7,6 @@ by design; diceware is never called here.
 
 from __future__ import annotations
 
-import pytest
 from textual.widgets import Input, ListView
 
 from lwpm.app import LwpmApp
@@ -15,11 +14,11 @@ from lwpm.screens.auth import AuthScreen
 from lwpm.screens.vault import VaultScreen
 
 # Fast Argon2id params: iterations=1, memory_cost=32 (≥8×lanes), lanes=4
-FAST_KDF = {"iterations": 1, "memory_cost": 32, "lanes": 4}
-MASTER_PW = "correct-horse-battery-staple"
-WRONG_PW = "definitely-wrong-password"
-ENTRY_NAME = "github"
-ENTRY_PW = "s3cr3t-entry-pw"
+FAST_KDF = {'iterations': 1, 'memory_cost': 32, 'lanes': 4}
+MASTER_PW = 'correct-horse-battery-staple'
+WRONG_PW = 'definitely-wrong-password'
+ENTRY_NAME = 'github'
+ENTRY_PW = 's3cr3t-entry-pw'
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +28,7 @@ ENTRY_PW = "s3cr3t-entry-pw"
 
 def _make_app() -> LwpmApp:
     """Return a fresh in-memory app with cheap KDF params."""
-    app = LwpmApp(db_path=":memory:")
+    app = LwpmApp(db_path=':memory:')
     app.kdf_params = FAST_KDF
     return app
 
@@ -38,12 +37,12 @@ async def _initialize(pilot) -> None:
     """Fill in password + confirm on the first-run AuthScreen and submit."""
     app = pilot.app
     # Widgets live inside the current screen, not the app root.
-    pw_input = app.screen.query_one("#password", Input)
-    confirm_input = app.screen.query_one("#confirm", Input)
+    pw_input = app.screen.query_one('#password', Input)
+    confirm_input = app.screen.query_one('#confirm', Input)
     pw_input.value = MASTER_PW
     confirm_input.value = MASTER_PW
     await pilot.pause()
-    await pilot.press("enter")
+    await pilot.press('enter')
     await pilot.pause()
 
 
@@ -66,13 +65,12 @@ async def test_first_run_initialization_unlocks_to_vault_screen():
 
         await _initialize(pilot)
 
-        assert app.vault.is_initialized(), "vault should be initialized"
-        assert app.key is not None, "key should be held in memory"
-        assert isinstance(app.screen, VaultScreen), "should have switched to VaultScreen"
-        assert (
-            app.screen.focused is not None and app.screen.focused.id == "names"
-        ), "ListView '#names' should have focus on VaultScreen upon app startup"
-
+        assert app.vault.is_initialized(), 'vault should be initialized'
+        assert app.key is not None, 'key should be held in memory'
+        assert isinstance(app.screen, VaultScreen), 'should have switched to VaultScreen'
+        assert app.screen.focused is not None and app.screen.focused.id == 'names', (
+            "ListView '#names' should have focus on VaultScreen upon app startup"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -102,24 +100,24 @@ async def test_wrong_password_rejected_then_correct_unlocks():
         assert app.key is None
 
         # Enter the wrong password
-        pw_input = app.screen.query_one("#password", Input)
+        pw_input = app.screen.query_one('#password', Input)
         pw_input.value = WRONG_PW
         await pilot.pause()
-        await pilot.press("enter")
+        await pilot.press('enter')
         await pilot.pause()
 
-        assert app.key is None, "wrong password must not unlock the vault"
-        assert isinstance(app.screen, AuthScreen), "must stay on AuthScreen after wrong pw"
+        assert app.key is None, 'wrong password must not unlock the vault'
+        assert isinstance(app.screen, AuthScreen), 'must stay on AuthScreen after wrong pw'
 
         # Now enter the correct password
-        pw_input = app.screen.query_one("#password", Input)
+        pw_input = app.screen.query_one('#password', Input)
         pw_input.value = MASTER_PW
         await pilot.pause()
-        await pilot.press("enter")
+        await pilot.press('enter')
         await pilot.pause()
 
-        assert app.key is not None, "correct password should unlock the vault"
-        assert isinstance(app.screen, VaultScreen), "should switch to VaultScreen on unlock"
+        assert app.key is not None, 'correct password should unlock the vault'
+        assert isinstance(app.screen, VaultScreen), 'should switch to VaultScreen on unlock'
 
 
 # ---------------------------------------------------------------------------
@@ -149,11 +147,12 @@ async def test_add_entry_appears_in_list_and_storage():
 
         # app.screen is now the EntryModal pushed on top of the stack.
         from lwpm.screens.entry_modal import EntryModal
-        assert isinstance(app.screen, EntryModal), "EntryModal should be on top"
+
+        assert isinstance(app.screen, EntryModal), 'EntryModal should be on top'
 
         # Set fields directly on the modal's inputs
-        name_input = app.screen.query_one("#name", Input)
-        pw_input = app.screen.query_one("#password", Input)
+        name_input = app.screen.query_one('#name', Input)
+        pw_input = app.screen.query_one('#password', Input)
         name_input.value = ENTRY_NAME
         pw_input.value = ENTRY_PW
         await pilot.pause()
@@ -165,20 +164,20 @@ async def test_add_entry_appears_in_list_and_storage():
         await pilot.pause()
 
         # Back on VaultScreen
-        assert isinstance(app.screen, VaultScreen), "should return to VaultScreen after save"
+        assert isinstance(app.screen, VaultScreen), 'should return to VaultScreen after save'
 
         # Entry is in storage
-        assert ENTRY_NAME in app.vault.list_names(), "entry should be persisted in the vault"
+        assert ENTRY_NAME in app.vault.list_names(), 'entry should be persisted in the vault'
 
         # Entry is visible in the ListView — the VaultScreen._names list mirrors
         # what the ListView shows, and is refreshed after save via the callback.
         vault_screen_after = app.screen
         assert isinstance(vault_screen_after, VaultScreen)
         assert ENTRY_NAME in vault_screen_after._names, (
-            "entry name should be in VaultScreen._names after refresh"
+            'entry name should be in VaultScreen._names after refresh'
         )
-        list_view = vault_screen_after.query_one("#names", ListView)
-        assert len(list(list_view.children)) > 0, "ListView should have at least one item"
+        list_view = vault_screen_after.query_one('#names', ListView)
+        assert len(list(list_view.children)) > 0, 'ListView should have at least one item'
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +192,7 @@ async def test_copy_password_calls_pyperclip_and_arms_timer(monkeypatch):
     """
     copied: list[str] = []
 
-    monkeypatch.setattr("lwpm.app.pyperclip.copy", lambda val: copied.append(val))
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: copied.append(val))
 
     app = _make_app()
     async with app.run_test() as pilot:
@@ -202,11 +201,12 @@ async def test_copy_password_calls_pyperclip_and_arms_timer(monkeypatch):
         await pilot.pause()
 
         # Add an entry directly via the vault so we skip modal interaction
-        from lwpm import crypto
         from datetime import datetime
 
-        blob = crypto.encrypt_fields(app.key, {"password": ENTRY_PW})
-        now = datetime.now().isoformat(timespec="seconds")
+        from lwpm import crypto
+
+        blob = crypto.encrypt_fields(app.key, {'password': ENTRY_PW})
+        now = datetime.now().isoformat(timespec='seconds')
         app.vault.add_credential(ENTRY_NAME, blob, created_at=now, updated_at=now)
 
         # Refresh the list so the new entry is visible and selected
@@ -220,11 +220,11 @@ async def test_copy_password_calls_pyperclip_and_arms_timer(monkeypatch):
         vault_screen.action_copy_password()
         await pilot.pause()
 
-        assert len(copied) >= 1, "pyperclip.copy should have been called"
+        assert len(copied) >= 1, 'pyperclip.copy should have been called'
         assert copied[-1] == ENTRY_PW, (
             f"copied value should be the entry's password; got {copied[-1]!r}"
         )
-        assert app._clip_timer is not None, "clipboard timer should be armed after copy"
+        assert app._clip_timer is not None, 'clipboard timer should be armed after copy'
 
 
 # ---------------------------------------------------------------------------
@@ -252,8 +252,8 @@ async def test_lock_zeroes_key_and_shows_auth_screen():
         vault_screen.action_lock()
         await pilot.pause()
 
-        assert app.key is None, "key must be zeroed after lock"
-        assert isinstance(app.screen, AuthScreen), "should be on AuthScreen after lock"
+        assert app.key is None, 'key must be zeroed after lock'
+        assert isinstance(app.screen, AuthScreen), 'should be on AuthScreen after lock'
 
 
 # ---------------------------------------------------------------------------
@@ -273,15 +273,15 @@ async def test_unlock_restores_selection_and_focuses_names_list():
         await pilot.pause()
 
         # Add two entries: "alpha" and "beta"
-        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
-        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+        _add_entry(app, name='alpha', fields={'password': 'pw-alpha'})
+        _add_entry(app, name='beta', fields={'password': 'pw-beta'})
 
         vault_screen = app.screen
         assert isinstance(vault_screen, VaultScreen)
-        vault_screen.refresh_list(select="beta")
+        vault_screen.refresh_list(select='beta')
         await pilot.pause()
 
-        assert vault_screen.selected_name == "beta"
+        assert vault_screen.selected_name == 'beta'
 
         # Lock the app
         app.lock()
@@ -290,10 +290,10 @@ async def test_unlock_restores_selection_and_focuses_names_list():
         assert isinstance(app.screen, AuthScreen)
 
         # Unlock with master password
-        pw_input = app.screen.query_one("#password", Input)
+        pw_input = app.screen.query_one('#password', Input)
         pw_input.value = MASTER_PW
         await pilot.pause()
-        await pilot.press("enter")
+        await pilot.press('enter')
         await pilot.pause()
 
         # Now on VaultScreen
@@ -301,11 +301,11 @@ async def test_unlock_restores_selection_and_focuses_names_list():
         assert isinstance(new_vault_screen, VaultScreen)
 
         # 1. Selected entry should still be "beta"
-        assert new_vault_screen.selected_name == "beta", "selection should be restored to 'beta'"
+        assert new_vault_screen.selected_name == 'beta', "selection should be restored to 'beta'"
 
         # 2. Focused widget should be the ListView (#names)
         assert new_vault_screen.focused is not None
-        assert new_vault_screen.focused.id == "names", "ListView '#names' should have focus"
+        assert new_vault_screen.focused.id == 'names', "ListView '#names' should have focus"
 
 
 async def test_copy_password_immediately_after_unlock_without_tab(monkeypatch):
@@ -314,7 +314,7 @@ async def test_copy_password_immediately_after_unlock_without_tab(monkeypatch):
     without requiring <tab> or scrolling.
     """
     copied: list[str] = []
-    monkeypatch.setattr("lwpm.app.pyperclip.copy", lambda val: copied.append(val))
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: copied.append(val))
 
     app = _make_app()
     async with app.run_test() as pilot:
@@ -322,32 +322,30 @@ async def test_copy_password_immediately_after_unlock_without_tab(monkeypatch):
         await _initialize(pilot)
         await pilot.pause()
 
-        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
-        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+        _add_entry(app, name='alpha', fields={'password': 'pw-alpha'})
+        _add_entry(app, name='beta', fields={'password': 'pw-beta'})
 
         vault_screen = app.screen
         assert isinstance(vault_screen, VaultScreen)
-        vault_screen.refresh_list(select="beta")
+        vault_screen.refresh_list(select='beta')
         await pilot.pause()
 
         app.lock()
         await pilot.pause()
 
         # Unlock
-        pw_input = app.screen.query_one("#password", Input)
+        pw_input = app.screen.query_one('#password', Input)
         pw_input.value = MASTER_PW
         await pilot.pause()
-        await pilot.press("enter")
+        await pilot.press('enter')
         await pilot.pause()
 
         # Press 'c' immediately without pressing <tab> or moving cursor
-        await pilot.press("c")
+        await pilot.press('c')
         await pilot.pause()
 
-        assert len(copied) >= 1, "pyperclip.copy should have been called"
-        assert copied[-1] == "pw-beta", f"expected 'pw-beta', got {copied[-1]!r}"
-
-
+        assert len(copied) >= 1, 'pyperclip.copy should have been called'
+        assert copied[-1] == 'pw-beta', f"expected 'pw-beta', got {copied[-1]!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -360,7 +358,7 @@ async def test_clear_clipboard_calls_pyperclip_with_empty_string(monkeypatch):
     app.clear_clipboard() must call pyperclip.copy("") to wipe the clipboard.
     """
     copied: list[str] = []
-    monkeypatch.setattr("lwpm.app.pyperclip.copy", lambda val: copied.append(val))
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: copied.append(val))
 
     app = _make_app()
     async with app.run_test() as pilot:
@@ -371,7 +369,7 @@ async def test_clear_clipboard_calls_pyperclip_with_empty_string(monkeypatch):
         app.clear_clipboard()
         await pilot.pause()
 
-        assert "" in copied, "clear_clipboard should call pyperclip.copy with empty string"
+        assert '' in copied, 'clear_clipboard should call pyperclip.copy with empty string'
 
 
 # ---------------------------------------------------------------------------
@@ -384,7 +382,7 @@ async def test_copy_to_clipboard_value_arms_clip_timer(monkeypatch):
     copy_to_clipboard_value() should set app._clip_timer to a non-None value
     so the clipboard is cleared automatically after CLIP_TIMEOUT seconds.
     """
-    monkeypatch.setattr("lwpm.app.pyperclip.copy", lambda val: None)
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: None)
 
     app = _make_app()
     async with app.run_test() as pilot:
@@ -392,12 +390,12 @@ async def test_copy_to_clipboard_value_arms_clip_timer(monkeypatch):
         await _initialize(pilot)
         await pilot.pause()
 
-        assert app._clip_timer is None, "timer should start as None"
+        assert app._clip_timer is None, 'timer should start as None'
 
-        app.copy_to_clipboard_value("some-secret", "Password")
+        app.copy_to_clipboard_value('some-secret', 'Password')
         await pilot.pause()
 
-        assert app._clip_timer is not None, "copy_to_clipboard_value should arm the clip timer"
+        assert app._clip_timer is not None, 'copy_to_clipboard_value should arm the clip timer'
 
 
 # ---------------------------------------------------------------------------
@@ -410,9 +408,9 @@ def _add_entry(app, name=ENTRY_NAME, fields=None):
 
     from lwpm import crypto
 
-    fields = fields or {"password": ENTRY_PW}
+    fields = fields or {'password': ENTRY_PW}
     blob = crypto.encrypt_fields(app.key, fields)
-    now = datetime.now().isoformat(timespec="seconds")
+    now = datetime.now().isoformat(timespec='seconds')
     app.vault.add_credential(name, blob, created_at=now, updated_at=now)
 
 
@@ -430,7 +428,7 @@ async def test_change_master_password_reencrypts_entries_and_swaps_key():
     from lwpm import crypto
     from lwpm.screens.change_password_modal import ChangePasswordModal
 
-    new_pw = "brand-new-master-passphrase"
+    new_pw = 'brand-new-master-passphrase'
     app = _make_app()
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -444,9 +442,9 @@ async def test_change_master_password_reencrypts_entries_and_swaps_key():
         await pilot.pause()
         assert isinstance(app.screen, ChangePasswordModal)
 
-        app.screen.query_one("#current", Input).value = MASTER_PW
-        app.screen.query_one("#new", Input).value = new_pw
-        app.screen.query_one("#confirm", Input).value = new_pw
+        app.screen.query_one('#current', Input).value = MASTER_PW
+        app.screen.query_one('#new', Input).value = new_pw
+        app.screen.query_one('#confirm', Input).value = new_pw
         await pilot.pause()
         app.screen._submit()
         await pilot.pause()
@@ -454,20 +452,20 @@ async def test_change_master_password_reencrypts_entries_and_swaps_key():
         # Key swapped; entry decrypts under the new in-memory key.
         assert app.key is not None and app.key != old_key
         blob = app.vault.get_secret_blob(ENTRY_NAME)
-        assert crypto.decrypt_fields(app.key, blob) == {"password": ENTRY_PW}
+        assert crypto.decrypt_fields(app.key, blob) == {'password': ENTRY_PW}
 
         # Old password no longer unlocks; new one does.
         app.lock()
         await pilot.pause()
-        app.screen.query_one("#password", Input).value = MASTER_PW
-        await pilot.press("enter")
+        app.screen.query_one('#password', Input).value = MASTER_PW
+        await pilot.press('enter')
         await pilot.pause()
-        assert app.key is None, "old password must not unlock after change"
+        assert app.key is None, 'old password must not unlock after change'
 
-        app.screen.query_one("#password", Input).value = new_pw
-        await pilot.press("enter")
+        app.screen.query_one('#password', Input).value = new_pw
+        await pilot.press('enter')
         await pilot.pause()
-        assert app.key is not None, "new password should unlock after change"
+        assert app.key is not None, 'new password should unlock after change'
         assert isinstance(app.screen, VaultScreen)
 
 
@@ -487,7 +485,7 @@ async def test_edit_entry_updates_fields():
         await _initialize(pilot)
         await pilot.pause()
 
-        _add_entry(app, fields={"password": ENTRY_PW, "username": "old-user"})
+        _add_entry(app, fields={'password': ENTRY_PW, 'username': 'old-user'})
         app.screen.refresh_list(select=ENTRY_NAME)
         await pilot.pause()
 
@@ -495,13 +493,13 @@ async def test_edit_entry_updates_fields():
         await pilot.pause()
         assert isinstance(app.screen, EntryModal)
 
-        app.screen.query_one("#username", Input).value = "new-user"
+        app.screen.query_one('#username', Input).value = 'new-user'
         await pilot.pause()
         app.screen._save()
         await pilot.pause()
 
         blob = app.vault.get_secret_blob(ENTRY_NAME)
-        assert crypto.decrypt_fields(app.key, blob)["username"] == "new-user"
+        assert crypto.decrypt_fields(app.key, blob)['username'] == 'new-user'
 
 
 # ---------------------------------------------------------------------------
@@ -555,13 +553,13 @@ async def test_generate_random_password_populates_field():
         await pilot.pause()
         modal = app.screen
 
-        modal.query_one("#gen-mode", Select).value = "random"
-        modal.query_one("#gen-length", Input).value = "24"
+        modal.query_one('#gen-mode', Select).value = 'random'
+        modal.query_one('#gen-length', Input).value = '24'
         await pilot.pause()
         modal.action_generate()
         await pilot.pause()
 
-        assert len(modal.query_one("#password", Input).value) == 24
+        assert len(modal.query_one('#password', Input).value) == 24
 
 
 # ---------------------------------------------------------------------------
@@ -581,35 +579,34 @@ async def test_closing_search_restores_pre_search_selection():
         await _initialize(pilot)
         await pilot.pause()
 
-        _add_entry(app, name="alpha", fields={"password": "pw-alpha"})
-        _add_entry(app, name="beta", fields={"password": "pw-beta"})
+        _add_entry(app, name='alpha', fields={'password': 'pw-alpha'})
+        _add_entry(app, name='beta', fields={'password': 'pw-beta'})
 
         vault_screen = app.screen
         assert isinstance(vault_screen, VaultScreen)
-        vault_screen.refresh_list(select="beta")
+        vault_screen.refresh_list(select='beta')
         await pilot.pause()
 
-        assert vault_screen.selected_name == "beta"
+        assert vault_screen.selected_name == 'beta'
 
         # Open search mode
         vault_screen.action_search()
         await pilot.pause()
-        assert vault_screen.query_one("#search", Input).display is True
+        assert vault_screen.query_one('#search', Input).display is True
 
         # Type 'alpha' in search input
-        search_input = vault_screen.query_one("#search", Input)
-        search_input.value = "alpha"
+        search_input = vault_screen.query_one('#search', Input)
+        search_input.value = 'alpha'
         await pilot.pause()
 
         # The filtered list now shows 'alpha' and highlights 'alpha'
-        assert vault_screen.selected_name == "alpha"
+        assert vault_screen.selected_name == 'alpha'
 
         # Close search mode
         vault_screen.action_search()
         await pilot.pause()
-        assert vault_screen.query_one("#search", Input).display is False
+        assert vault_screen.query_one('#search', Input).display is False
 
         # Selection must be restored to 'beta' (the pre-search selection)
-        assert vault_screen.selected_name == "beta"
-        assert app.last_selected_name == "beta"
-
+        assert vault_screen.selected_name == 'beta'
+        assert app.last_selected_name == 'beta'

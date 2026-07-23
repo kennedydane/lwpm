@@ -8,11 +8,11 @@ caller-supplied re-encrypt callable. See specification.md §2.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
-DEFAULT_DB_PATH = Path.home() / ".lwpm.db"
+DEFAULT_DB_PATH = Path.home() / '.lwpm.db'
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS config (
@@ -62,24 +62,22 @@ class Vault:
     # -- vault config / initialization ----------------------------------
 
     def is_initialized(self) -> bool:
-        row = self._conn.execute("SELECT 1 FROM config LIMIT 1").fetchone()
+        row = self._conn.execute('SELECT 1 FROM config LIMIT 1').fetchone()
         return row is not None
 
     def initialize(self, *, salt: bytes, verification_blob: bytes) -> None:
         if self.is_initialized():
-            raise AlreadyInitializedError("vault already initialized")
+            raise AlreadyInitializedError('vault already initialized')
         self._conn.execute(
-            "INSERT INTO config (id, salt, verification_blob) VALUES (1, ?, ?)",
+            'INSERT INTO config (id, salt, verification_blob) VALUES (1, ?, ?)',
             (salt, verification_blob),
         )
         self._conn.commit()
 
     def get_config(self) -> tuple[bytes, bytes]:
-        row = self._conn.execute(
-            "SELECT salt, verification_blob FROM config LIMIT 1"
-        ).fetchone()
+        row = self._conn.execute('SELECT salt, verification_blob FROM config LIMIT 1').fetchone()
         if row is None:
-            raise AlreadyInitializedError("vault is not initialized")
+            raise AlreadyInitializedError('vault is not initialized')
         return bytes(row[0]), bytes(row[1])
 
     # -- credential CRUD ------------------------------------------------
@@ -89,12 +87,12 @@ class Vault:
     ) -> None:
         try:
             self._conn.execute(
-                "INSERT INTO credentials (name, secret_blob, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?)",
+                'INSERT INTO credentials (name, secret_blob, created_at, updated_at) '
+                'VALUES (?, ?, ?, ?)',
                 (name, secret_blob, created_at, updated_at),
             )
         except sqlite3.IntegrityError as exc:
-            raise DuplicateNameError(f"credential {name!r} already exists") from exc
+            raise DuplicateNameError(f'credential {name!r} already exists') from exc
         self._conn.commit()
 
     def update_credential(
@@ -108,22 +106,20 @@ class Vault:
         target_name = new_name if new_name is not None else name
         try:
             self._conn.execute(
-                "UPDATE credentials SET name = ?, secret_blob = ?, updated_at = ? "
-                "WHERE name = ?",
+                'UPDATE credentials SET name = ?, secret_blob = ?, updated_at = ? WHERE name = ?',
                 (target_name, secret_blob, updated_at, name),
             )
         except sqlite3.IntegrityError as exc:
-            raise DuplicateNameError(f"credential {target_name!r} already exists") from exc
+            raise DuplicateNameError(f'credential {target_name!r} already exists') from exc
         self._conn.commit()
 
     def delete_credential(self, name: str) -> None:
-        self._conn.execute("DELETE FROM credentials WHERE name = ?", (name,))
+        self._conn.execute('DELETE FROM credentials WHERE name = ?', (name,))
         self._conn.commit()
 
     def get_credential(self, name: str) -> Credential | None:
         row = self._conn.execute(
-            "SELECT id, name, secret_blob, created_at, updated_at "
-            "FROM credentials WHERE name = ?",
+            'SELECT id, name, secret_blob, created_at, updated_at FROM credentials WHERE name = ?',
             (name,),
         ).fetchone()
         if row is None:
@@ -139,16 +135,13 @@ class Vault:
     # -- listing / search -----------------------------------------------
 
     def list_names(self) -> list[str]:
-        rows = self._conn.execute(
-            "SELECT name FROM credentials ORDER BY name"
-        ).fetchall()
+        rows = self._conn.execute('SELECT name FROM credentials ORDER BY name').fetchall()
         return [r[0] for r in rows]
 
     def search_names(self, substring: str) -> list[str]:
         rows = self._conn.execute(
-            "SELECT name FROM credentials WHERE name LIKE ? ESCAPE '\\' "
-            "ORDER BY name",
-            (f"%{_escape_like(substring)}%",),
+            "SELECT name FROM credentials WHERE name LIKE ? ESCAPE '\\' ORDER BY name",
+            (f'%{_escape_like(substring)}%',),
         ).fetchall()
         return [r[0] for r in rows]
 
@@ -168,17 +161,15 @@ class Vault:
         the old key (specification.md §3).
         """
         try:
-            rows = self._conn.execute(
-                "SELECT id, secret_blob FROM credentials"
-            ).fetchall()
+            rows = self._conn.execute('SELECT id, secret_blob FROM credentials').fetchall()
             for cred_id, blob in rows:
                 new_blob = reencrypt(bytes(blob))
                 self._conn.execute(
-                    "UPDATE credentials SET secret_blob = ? WHERE id = ?",
+                    'UPDATE credentials SET secret_blob = ? WHERE id = ?',
                     (new_blob, cred_id),
                 )
             self._conn.execute(
-                "UPDATE config SET salt = ?, verification_blob = ? WHERE id = 1",
+                'UPDATE config SET salt = ?, verification_blob = ? WHERE id = 1',
                 (new_salt, new_verification_blob),
             )
         except Exception:
@@ -189,4 +180,4 @@ class Vault:
 
 def _escape_like(text: str) -> str:
     """Escape LIKE wildcards so a search term matches literally."""
-    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return text.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')

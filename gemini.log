@@ -24,3 +24,34 @@
   - Updated `on_input_changed()` to only trigger `refresh_list()` when search input is displayed (`event.input.display`).
 - Added unit test `test_closing_search_restores_pre_search_selection` in `tests/test_app.py`.
 - Verified all 63 unit tests pass cleanly (`uv run pytest`).
+[2026-07-23T12:21:00+02:00] USER_INPUT: Please add a pre-commit hook to run `ruff` for linting etc. Then also add a github action to do the same lint checks.
+[2026-07-23T12:21:00+02:00] DECISION: Added ruff and pre-commit to project dev dependencies and configured linting & formatting.
+- Added `ruff` and `pre-commit` to dev dependencies in `pyproject.toml` via `uv add --dev ruff pre-commit`.
+- Configured `[tool.ruff]` and `[tool.ruff.lint]` in `pyproject.toml`.
+- Created `.pre-commit-config.yaml` containing ruff linter (`ruff`), ruff formatter (`ruff-format`), and standard pre-commit file checks.
+- Created `.github/workflows/lint.yml` GitHub Action workflow running `uv run ruff check .` and `uv run ruff format --check .`.
+- Executed `uv run ruff check --fix .` and `uv run ruff format .` across repository.
+- Fixed unparenthesized exception tuple syntax error in `src/lwpm/screens/entry_modal.py`.
+- Installed pre-commit hooks into `.git/hooks/pre-commit` and verified `uv run pre-commit run --all-files` passes cleanly.
+- Verified all 63 pytest unit tests pass cleanly (`uv run pytest`).
+[2026-07-23T12:22:10+02:00] USER_INPUT: Note for linting I want single quotes
+[2026-07-23T12:22:10+02:00] DECISION: Configured Ruff to prefer single quotes for formatting and linting rules.
+- Configured `[tool.ruff.format] quote-style = "single"` and `[tool.ruff.lint.flake8-quotes] inline-quotes = "single"` in `pyproject.toml`.
+- Added `"Q"` (`flake8-quotes`) to `[tool.ruff.lint] select`.
+- Formatted repository codebase with `uv run ruff format .` and fixed lint rules.
+- Verified all pre-commit hooks (`uv run pre-commit run --all-files`) and pytest unit tests (`uv run pytest`) pass cleanly.
+[2026-07-23T12:38:04+02:00] USER_INPUT: Please do a code review of the current PR
+[2026-07-23T12:40:50+02:00] DECISION: Performed comprehensive code review of branch feature/add-ruff-pre-commit-github-action against origin/main. Inspected pre-commit hooks, GitHub action workflow, Ruff config, pyproject.toml, and code formatting changes across all source files and tests.
+[2026-07-23T12:41:51+02:00] USER_INPUT: Can we add test coverage information? Don't know if this belongs in the pre commit hook and/or the github action/CI?
+[2026-07-23T12:43:00+02:00] DECISION: Configured test coverage reporting in CI and pyproject.toml options.
+- Explained best practice: coverage belongs in CI / GitHub Actions and local pytest runs, not pre-commit hooks (to avoid slowing down git commits).
+- Added `--cov=lwpm --cov-report=term-missing` to `addopts` in `pyproject.toml`.
+- Added `Test & Coverage` job in `.github/workflows/lint.yml` GitHub Action workflow running `uv run pytest --cov=lwpm --cov-report=term-missing --cov-report=xml`.
+- Verified all pre-commit hooks and 63 unit tests (with 96% coverage) pass cleanly.
+[2026-07-23T12:43:36+02:00] USER_INPUT: Please commit and push
+[2026-07-23T12:43:40+02:00] DECISION: Committing and pushing changes to origin/feature/add-ruff-pre-commit-github-action.
+[2026-07-23T12:47:53+02:00] USER_INPUT: Should the CI post some kind of coverage info when it completes? Think I've seen something like that before in other places…
+[2026-07-23T12:48:30+02:00] DECISION: Configured GitHub Action workflow to post PR sticky coverage comments and GitHub Job Summary tables.
+- Added `pull-requests: write` permissions to `.github/workflows/lint.yml`.
+- Added `$GITHUB_STEP_SUMMARY` markdown coverage table output.
+- Added `marocchino/sticky-pull-request-comment@v2` step to automatically comment on pull requests with a sticky markdown coverage table.

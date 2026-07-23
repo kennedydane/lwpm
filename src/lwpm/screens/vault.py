@@ -11,48 +11,48 @@ from lwpm import crypto
 from lwpm.screens.confirm import ConfirmModal
 from lwpm.screens.entry_modal import EntryModal
 
-MASK = "•" * 8  # ••••••••
+MASK = '•' * 8  # ••••••••
 
 
 class VaultScreen(Screen):
     """Lists credential names and shows the selected entry's details."""
 
     BINDINGS = [
-        ("a", "add", "Add"),
-        ("e", "edit", "Edit"),
-        ("d", "delete", "Delete"),
-        ("c", "copy_password", "Copy pw"),
-        ("u", "copy_username", "Copy user"),
-        ("p", "change_password", "Master pw"),
-        ("slash", "search", "Search"),
-        ("l", "lock", "Lock"),
-        ("q", "quit", "Quit"),
+        ('a', 'add', 'Add'),
+        ('e', 'edit', 'Edit'),
+        ('d', 'delete', 'Delete'),
+        ('c', 'copy_password', 'Copy pw'),
+        ('u', 'copy_username', 'Copy user'),
+        ('p', 'change_password', 'Master pw'),
+        ('slash', 'search', 'Search'),
+        ('l', 'lock', 'Lock'),
+        ('q', 'quit', 'Quit'),
     ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
         with Horizontal():
-            with Vertical(id="left"):
-                yield Input(id="search", placeholder="search…")
-                yield ListView(id="names")
-            yield Static(id="detail")
+            with Vertical(id='left'):
+                yield Input(id='search', placeholder='search…')
+                yield ListView(id='names')
+            yield Static(id='detail')
         yield Footer()
 
     def on_mount(self) -> None:
         self._names: list[str] = []
         self._pre_search_selected_name: str | None = None
-        self.query_one("#search", Input).display = False
-        self.refresh_list(select=getattr(self.app, "last_selected_name", None))
-        self.query_one("#names", ListView).focus()
+        self.query_one('#search', Input).display = False
+        self.refresh_list(select=getattr(self.app, 'last_selected_name', None))
+        self.query_one('#names', ListView).focus()
 
     # -- list management ------------------------------------------------
 
     def refresh_list(self, select: str | None = None) -> None:
-        search = self.query_one("#search", Input)
-        query = search.value if search.display else ""
+        search = self.query_one('#search', Input)
+        query = search.value if search.display else ''
         self._names = self.app.vault.search_names(query)
 
-        names = self.query_one("#names", ListView)
+        names = self.query_one('#names', ListView)
         names.clear()
         for name in self._names:
             names.append(ListItem(Label(name)))
@@ -68,7 +68,7 @@ class VaultScreen(Screen):
 
     @property
     def selected_name(self) -> str | None:
-        names = self.query_one("#names", ListView)
+        names = self.query_one('#names', ListView)
         if names.index is None or not self._names:
             return None
         return self._names[names.index]
@@ -79,7 +79,7 @@ class VaultScreen(Screen):
             self._show_detail(self.selected_name)
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        if event.input.id == "search" and event.input.display:
+        if event.input.id == 'search' and event.input.display:
             self.refresh_list()
 
     # -- detail rendering -----------------------------------------------
@@ -91,19 +91,19 @@ class VaultScreen(Screen):
     def _show_detail(self, name: str) -> None:
         fields = self._decrypt(name)
         lines = [
-            f"[b]{name}[/b]",
-            "",
-            f"Username: {fields.get('username', '')}",
-            f"URL:      {fields.get('url', '')}",
-            f"Password: {MASK}",
-            "",
-            "Notes:",
-            fields.get("notes", ""),
+            f'[b]{name}[/b]',
+            '',
+            f'Username: {fields.get("username", "")}',
+            f'URL:      {fields.get("url", "")}',
+            f'Password: {MASK}',
+            '',
+            'Notes:',
+            fields.get('notes', ''),
         ]
-        self.query_one("#detail", Static).update("\n".join(lines))
+        self.query_one('#detail', Static).update('\n'.join(lines))
 
     def _render_empty(self) -> None:
-        self.query_one("#detail", Static).update("No entries yet. Press 'a' to add one.")
+        self.query_one('#detail', Static).update("No entries yet. Press 'a' to add one.")
 
     # -- actions --------------------------------------------------------
 
@@ -143,17 +143,17 @@ class VaultScreen(Screen):
         if name is None:
             return
         fields = self._decrypt(name)
-        self.app.copy_to_clipboard_value(fields["password"], "Password")
+        self.app.copy_to_clipboard_value(fields['password'], 'Password')
 
     def action_copy_username(self) -> None:
         name = self.selected_name
         if name is None:
             return
-        username = self._decrypt(name).get("username")
+        username = self._decrypt(name).get('username')
         if username:
-            self.app.copy_to_clipboard_value(username, "Username")
+            self.app.copy_to_clipboard_value(username, 'Username')
         else:
-            self.notify("No username for this entry.", severity="warning")
+            self.notify('No username for this entry.', severity='warning')
 
     def action_change_password(self) -> None:
         from lwpm.screens.change_password_modal import ChangePasswordModal
@@ -161,19 +161,19 @@ class VaultScreen(Screen):
         self.app.push_screen(ChangePasswordModal())
 
     def action_search(self) -> None:
-        search = self.query_one("#search", Input)
+        search = self.query_one('#search', Input)
         search.display = not search.display
         if search.display:
-            self._pre_search_selected_name = (
-                self.selected_name or getattr(self.app, "last_selected_name", None)
+            self._pre_search_selected_name = self.selected_name or getattr(
+                self.app, 'last_selected_name', None
             )
             search.focus()
         else:
             pre_search = self._pre_search_selected_name
             self._pre_search_selected_name = None
-            search.value = ""
+            search.value = ''
             self.refresh_list(select=pre_search)
-            self.query_one("#names", ListView).focus()
+            self.query_one('#names', ListView).focus()
 
     def action_lock(self) -> None:
         self.app.lock()

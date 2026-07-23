@@ -17,9 +17,9 @@ import pyperclip
 from textual.app import App
 
 from lwpm import crypto
-from lwpm.storage import DEFAULT_DB_PATH, Vault
 from lwpm.screens.auth import AuthScreen
 from lwpm.screens.vault import VaultScreen
+from lwpm.storage import DEFAULT_DB_PATH, Vault
 
 #: Idle seconds before the vault auto-locks (specification.md §4).
 KEY_TIMEOUT = 300.0
@@ -30,8 +30,8 @@ CLIP_TIMEOUT = 30.0
 class LwpmApp(App):
     """Lightweight Password Manager."""
 
-    TITLE = "lwpm"
-    CSS_PATH = "lwpm.tcss"
+    TITLE = 'lwpm'
+    CSS_PATH = 'lwpm.tcss'
 
     #: Argon2id parameters; overridable so tests can derive keys cheaply.
     kdf_params: dict = {}
@@ -100,14 +100,14 @@ class LwpmApp(App):
         if self._clip_timer is not None:
             self._clip_timer.stop()
         self._clip_timer = self.set_timer(CLIP_TIMEOUT, self.clear_clipboard)
-        self.notify(f"{label} copied. Clipboard clears in {int(CLIP_TIMEOUT)}s.")
+        self.notify(f'{label} copied. Clipboard clears in {int(CLIP_TIMEOUT)}s.')
 
     def clear_clipboard(self) -> None:
-        pyperclip.copy("")
+        pyperclip.copy('')
         self._clip_timer = None
 
 
 def main() -> None:
     """Console entry point: run the app against the configured vault DB."""
-    db_path = os.environ.get("LWPM_DB", str(Path.home() / ".lwpm.db"))
+    db_path = os.environ.get('LWPM_DB', str(Path.home() / '.lwpm.db'))
     LwpmApp(db_path=db_path).run()

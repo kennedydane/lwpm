@@ -26,10 +26,10 @@ SALT_BYTES = 16
 
 # A known constant encrypted under the master key. Decrypting it successfully
 # proves the entered password derived the right key (specification.md §3).
-VERIFICATION_CONSTANT = b"lwpm-auth-ok"
+VERIFICATION_CONSTANT = b'lwpm-auth-ok'
 
 # Optional secret fields; omitted from the stored blob when empty.
-_OPTIONAL_FIELDS = ("username", "url", "notes")
+_OPTIONAL_FIELDS = ('username', 'url', 'notes')
 
 
 def generate_salt() -> bytes:
@@ -56,7 +56,7 @@ def derive_key(
         iterations=iterations,
         lanes=lanes,
         memory_cost=memory_cost,
-    ).derive(master_password.encode("utf-8"))
+    ).derive(master_password.encode('utf-8'))
     return base64.urlsafe_b64encode(raw)
 
 
@@ -76,23 +76,23 @@ def encrypt_fields(key: bytes, fields: dict) -> bytes:
     ``password`` is required and non-empty. Optional fields (username, url,
     notes) are omitted when empty/None, per specification.md §2.
     """
-    password = fields.get("password")
+    password = fields.get('password')
     if not password:
-        raise ValueError("password is required and must be non-empty")
+        raise ValueError('password is required and must be non-empty')
 
-    payload: dict[str, str] = {"password": password}
+    payload: dict[str, str] = {'password': password}
     for name in _OPTIONAL_FIELDS:
         value = fields.get(name)
         if value:
             payload[name] = value
 
-    data = json.dumps(payload).encode("utf-8")
+    data = json.dumps(payload).encode('utf-8')
     return encrypt(key, data)
 
 
 def decrypt_fields(key: bytes, blob: bytes) -> dict:
     """Decrypt a secret_blob back into its field dict."""
-    return json.loads(decrypt(key, blob).decode("utf-8"))
+    return json.loads(decrypt(key, blob).decode('utf-8'))
 
 
 def make_verification_blob(key: bytes) -> bytes:

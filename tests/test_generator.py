@@ -11,37 +11,37 @@ import pytest
 
 from lwpm import generator
 
-WORDS = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"]
+WORDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel']
 
 
 class TestDiceware:
     def test_default_is_seven_words(self):
         phrase = generator.diceware(wordlist=WORDS)
-        assert len(phrase.split("-")) == 7
+        assert len(phrase.split('-')) == 7
 
     def test_respects_word_count(self):
         phrase = generator.diceware(words=4, wordlist=WORDS)
-        assert len(phrase.split("-")) == 4
+        assert len(phrase.split('-')) == 4
 
     def test_words_come_from_the_wordlist(self):
         phrase = generator.diceware(words=5, wordlist=WORDS)
-        assert all(word in WORDS for word in phrase.split("-"))
+        assert all(word in WORDS for word in phrase.split('-'))
 
     def test_custom_separator(self):
-        phrase = generator.diceware(words=3, sep=".", wordlist=WORDS)
-        assert len(phrase.split(".")) == 3
+        phrase = generator.diceware(words=3, sep='.', wordlist=WORDS)
+        assert len(phrase.split('.')) == 3
 
     def test_uses_secrets_choice(self, monkeypatch):
-        calls = {"n": 0}
+        calls = {'n': 0}
 
         def fake_choice(seq):
-            calls["n"] += 1
+            calls['n'] += 1
             return seq[0]
 
-        monkeypatch.setattr(generator.secrets, "choice", fake_choice)
+        monkeypatch.setattr(generator.secrets, 'choice', fake_choice)
         phrase = generator.diceware(words=3, wordlist=WORDS)
-        assert calls["n"] == 3
-        assert phrase == "alpha-alpha-alpha"
+        assert calls['n'] == 3
+        assert phrase == 'alpha-alpha-alpha'
 
 
 class TestRandomPassword:
@@ -71,20 +71,18 @@ class TestRandomPassword:
 
     def test_no_classes_enabled_raises(self):
         with pytest.raises(ValueError):
-            generator.random_password(
-                lower=False, upper=False, digits=False, symbols=False
-            )
+            generator.random_password(lower=False, upper=False, digits=False, symbols=False)
 
     def test_uses_secrets_choice(self, monkeypatch):
-        calls = {"n": 0}
+        calls = {'n': 0}
 
         def fake_choice(seq):
-            calls["n"] += 1
+            calls['n'] += 1
             return seq[0]
 
-        monkeypatch.setattr(generator.secrets, "choice", fake_choice)
+        monkeypatch.setattr(generator.secrets, 'choice', fake_choice)
         generator.random_password(length=8, upper=False, digits=False, symbols=False)
-        assert calls["n"] == 8
+        assert calls['n'] == 8
 
 
 class TestLoadWordlist:
@@ -92,7 +90,7 @@ class TestLoadWordlist:
         try:
             words = generator.load_wordlist()
         except FileNotFoundError:
-            pytest.skip("bundled wordlist not present yet")
+            pytest.skip('bundled wordlist not present yet')
         # A diceware list needs enough words for decent entropy per word.
         assert len(words) >= 4000
         # One plain lowercase a–z word per line — no number column, no
