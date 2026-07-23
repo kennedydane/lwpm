@@ -7,7 +7,7 @@ by design; diceware is never called here.
 
 from __future__ import annotations
 
-from textual.widgets import Input, ListView
+from textual.widgets import Input, Label, ListView
 
 from lwpm.app import LwpmApp
 from lwpm.screens.auth import AuthScreen
@@ -610,3 +610,374 @@ async def test_closing_search_restores_pre_search_selection():
         # Selection must be restored to 'beta' (the pre-search selection)
         assert vault_screen.selected_name == 'beta'
         assert app.last_selected_name == 'beta'
+
+
+# ---------------------------------------------------------------------------
+# Test 12: App main() and clipboard timer reset
+# ---------------------------------------------------------------------------
+
+
+async def test_app_main_and_timer_reset(monkeypatch):
+    """Calling copy_to_clipboard_value multiple times resets the existing clip timer.
+
+    main() parses LWPM_DB env var and runs the app.
+    """
+    copied: list[str] = []
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: copied.append(val))
+
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        app.copy_to_clipboard_value('first', 'Password')
+        timer1 = app._clip_timer
+        assert timer1 is not None
+
+        app.copy_to_clipboard_value('second', 'Password')
+        timer2 = app._clip_timer
+        assert timer2 is not None
+        assert timer2 is not timer1
+
+    # Test main()
+    ran = {'called': False}
+    monkeypatch.setenv('LWPM_DB', '/tmp/test_lwpm.db')
+    monkeypatch.setattr(LwpmApp, 'run', lambda self: ran.update({'called': True}))
+    from lwpm.app import main
+
+    main()
+    assert ran['called'] is True
+
+
+# ---------------------------------------------------------------------------
+# Test 13: AuthScreen validation errors
+# ---------------------------------------------------------------------------
+
+
+async def test_auth_screen_validation_errors():
+    """AuthScreen shows errors for empty password and mismatched first-run password confirmation."""
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        auth_screen = app.screen
+        assert isinstance(auth_screen, AuthScreen)
+
+        # Empty password submit
+        pw_input = auth_screen.query_one('#password', Input)
+        pw_input.value = ''
+        auth_screen._submit()
+        await pilot.pause()
+
+        error_label = auth_screen.query_one('#auth-error', Label)
+        assert error_label.content == 'Password must not be empty.'
+
+        # Password mismatch on first run initialization
+        pw_input.value = 'password123'
+        confirm_input = auth_screen.query_one('#confirm', Input)
+        confirm_input.value = 'different'
+        auth_screen._submit()
+        await pilot.pause()
+
+        assert error_label.content == 'Passwords do not match.'
+
+
+# ---------------------------------------------------------------------------
+# Test 14: ConfirmModal buttons and cancel
+# ---------------------------------------------------------------------------
+
+
+async def test_confirm_modal_buttons_and_cancel():
+    """ConfirmModal dismisses with True for 'yes', False for 'no', and False for cancel binding."""
+    from textual.widgets import Button
+
+    from lwpm.screens.confirm import ConfirmModal
+
+    modal = ConfirmModal('Are you sure?')
+    assert modal._question == 'Are you sure?'
+
+    # Test button pressed 'yes'
+    dismissed = []
+    modal.dismiss = lambda val: dismissed.append(val)
+    modal.on_button_pressed(Button.Pressed(Button('Delete', id='yes')))
+    assert dismissed == [True]
+
+    # Test button pressed 'no'
+    dismissed.clear()
+    modal.on_button_pressed(Button.Pressed(Button('Cancel', id='no')))
+    assert dismissed == [False]
+
+    # Test action_cancel (escape key)
+    dismissed.clear()
+    modal.action_cancel()
+    assert dismissed == [False]
+
+
+# ---------------------------------------------------------------------------
+# Test 15: VaultScreen edge actions and copy username
+# ---------------------------------------------------------------------------
+
+
+async def test_vault_screen_actions_on_empty_vault_and_copy_username(monkeypatch):
+    """VaultScreen action handlers return cleanly when no item is selected.
+
+    Copy username handles existing username and missing username notifications. Quit action calls
+    app.exit().
+    """
+    copied: list[str] = []
+    monkeypatch.setattr('lwpm.app.pyperclip.copy', lambda val: copied.append(val))
+
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        vault_screen = app.screen
+        assert isinstance(vault_screen, VaultScreen)
+
+        # Empty list action calls return early without error
+        vault_screen.action_edit()
+        vault_screen.action_delete()
+        vault_screen.action_copy_password()
+        vault_screen.action_copy_username()
+        await pilot.pause()
+        assert len(copied) == 0
+
+        # Add entry with username
+        _add_entry(app, name='with_user', fields={'password': 'pw', 'username': 'alice'})
+        # Add entry without username
+        _add_entry(app, name='no_user', fields={'password': 'pw', 'username': ''})
+
+        vault_screen.refresh_list(select='with_user')
+        await pilot.pause()
+        vault_screen.action_copy_username()
+        await pilot.pause()
+        assert copied[-1] == 'alice'
+
+        vault_screen.refresh_list(select='no_user')
+        await pilot.pause()
+        vault_screen.action_copy_username()
+        await pilot.pause()
+
+        # Test action_quit
+        exited = {'called': False}
+        monkeypatch.setattr(app, 'exit', lambda: exited.update({'called': True}))
+        vault_screen.action_quit()
+        assert exited['called'] is True
+
+
+# ---------------------------------------------------------------------------
+# Test 16: ChangePasswordModal validation errors and cancel
+# ---------------------------------------------------------------------------
+
+
+async def test_change_password_modal_validation_and_errors(monkeypatch):
+    """ChangePasswordModal validates current password, non-empty new password, matching confirm
+
+    password, rekey exception handling, and cancel/escape.
+    """
+    from textual.widgets import Button
+
+    from lwpm.screens.change_password_modal import ChangePasswordModal
+
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        app.screen.action_change_password()
+        await pilot.pause()
+        modal = app.screen
+        assert isinstance(modal, ChangePasswordModal)
+
+        # 1. Incorrect current password
+        modal.query_one('#current', Input).value = WRONG_PW
+        modal.query_one('#new', Input).value = 'newpass'
+        modal.query_one('#confirm', Input).value = 'newpass'
+        modal._submit()
+        await pilot.pause()
+        assert modal.query_one('#change-error', Label).content == 'Current password is incorrect.'
+
+        # 2. Empty new password
+        modal.query_one('#current', Input).value = MASTER_PW
+        modal.query_one('#new', Input).value = ''
+        modal.query_one('#confirm', Input).value = ''
+        modal._submit()
+        await pilot.pause()
+        assert modal.query_one('#change-error', Label).content == 'New password must not be empty.'
+
+        # 3. New password mismatch
+        modal.query_one('#new', Input).value = 'newpass1'
+        modal.query_one('#confirm', Input).value = 'newpass2'
+        modal._submit()
+        await pilot.pause()
+        assert modal.query_one('#change-error', Label).content == 'New passwords do not match.'
+
+        # 4. Rekey exception failure
+        def failing_rekey(*args, **kwargs):
+            raise RuntimeError('rekey fail')
+
+        monkeypatch.setattr(app.vault, 'rekey', failing_rekey)
+        modal.query_one('#confirm', Input).value = 'newpass1'
+        modal._submit()
+        await pilot.pause()
+        assert (
+            modal.query_one('#change-error', Label).content
+            == 'Re-key failed. Vault unchanged; old password still works.'
+        )
+
+        # 5. Cancel button press & escape key action_cancel
+        dismissed = []
+        modal.dismiss = lambda val: dismissed.append(val)
+
+        modal.on_button_pressed(Button.Pressed(Button('Cancel', id='cancel')))
+        assert dismissed == [False]
+
+        modal.on_button_pressed(Button.Pressed(Button('Change', id='change')))
+
+        dismissed.clear()
+        modal.action_cancel()
+        assert dismissed == [False]
+
+
+# ---------------------------------------------------------------------------
+# Test 17: EntryModal validation, generator errors, and cancel
+# ---------------------------------------------------------------------------
+
+
+async def test_entry_modal_validation_generator_and_errors(monkeypatch):
+    """EntryModal tests generator fallback error, _int_value fallback, missing name/password,
+
+    duplicate name errors on add & edit, and button/escape handlers.
+    """
+    from textual.widgets import Button, Select, Switch
+
+    from lwpm import generator
+    from lwpm.screens.entry_modal import EntryModal
+
+    app = _make_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _initialize(pilot)
+        await pilot.pause()
+
+        # Add initial entry
+        _add_entry(app, name='existing', fields={'password': 'pw'})
+
+        app.screen.action_add()
+        await pilot.pause()
+        modal = app.screen
+        assert isinstance(modal, EntryModal)
+
+        # _int_value fallback with invalid text input
+        modal.query_one('#gen-words', Input).value = 'invalid'
+        assert modal._int_value('#gen-words', 7) == 7
+
+        # Generator missing wordlist error handling
+        generator.load_wordlist.cache_clear()
+
+        class FakeResource:
+            def joinpath(self, _name):
+                return self
+
+            def is_file(self):
+                return False
+
+        monkeypatch.setattr(generator.resources, 'files', lambda _pkg: FakeResource())
+        try:
+            modal.query_one('#gen-mode', Select).value = 'diceware'
+            modal.action_generate()
+            await pilot.pause()
+            assert (
+                modal.query_one('#entry-error', Label).content
+                == 'Wordlist not bundled; use Random mode.'
+            )
+        finally:
+            generator.load_wordlist.cache_clear()
+
+        # Generator ValueError when all classes are disabled
+        modal.query_one('#gen-mode', Select).value = 'random'
+        modal.query_one('#cls-lower', Switch).value = False
+        modal.query_one('#cls-upper', Switch).value = False
+        modal.query_one('#cls-digits', Switch).value = False
+        modal.query_one('#cls-symbols', Switch).value = False
+        modal.action_generate()
+        await pilot.pause()
+        assert (
+            modal.query_one('#entry-error', Label).content
+            == 'at least one character class must be enabled'
+        )
+
+        # Re-enable lower class for subsequent tests
+        modal.query_one('#cls-lower', Switch).value = True
+
+        # Save with empty name
+        modal.query_one('#name', Input).value = ''
+        modal.query_one('#password', Input).value = 'pw'
+        modal._save()
+        await pilot.pause()
+        assert modal.query_one('#entry-error', Label).content == 'Name is required.'
+
+        # Save with empty password
+        modal.query_one('#name', Input).value = 'new_entry'
+        modal.query_one('#password', Input).value = ''
+        modal._save()
+        await pilot.pause()
+        assert modal.query_one('#entry-error', Label).content == 'Password is required.'
+
+        # Save duplicate name when adding
+        modal.query_one('#name', Input).value = 'existing'
+        modal.query_one('#password', Input).value = 'pw'
+        modal._save()
+        await pilot.pause()
+        assert (
+            modal.query_one('#entry-error', Label).content
+            == "An entry named 'existing' already exists."
+        )
+
+        # Dismiss modal
+        modal.dismiss(False)
+        await pilot.pause()
+
+        # Save duplicate name when editing
+        _add_entry(app, name='second', fields={'password': 'pw'})
+        app.screen.refresh_list(select='second')
+        await pilot.pause()
+        app.screen.action_edit()
+        await pilot.pause()
+        edit_modal = app.screen
+        assert isinstance(edit_modal, EntryModal)
+
+        edit_modal.query_one('#name', Input).value = 'existing'
+        edit_modal._save()
+        await pilot.pause()
+        assert (
+            edit_modal.query_one('#entry-error', Label).content
+            == "An entry named 'existing' already exists."
+        )
+
+        # Test button pressed handlers (#save, #cancel, #generate) and action_cancel
+        dismissed = []
+        edit_modal.dismiss = lambda val: dismissed.append(val)
+
+        edit_modal.on_button_pressed(Button.Pressed(Button('Cancel', id='cancel')))
+        assert dismissed == [False]
+
+        dismissed.clear()
+        edit_modal.action_cancel()
+        assert dismissed == [False]
+
+        gen_called = {'called': False}
+        monkeypatch.setattr(
+            edit_modal, 'action_generate', lambda: gen_called.update({'called': True})
+        )
+        edit_modal.on_button_pressed(Button.Pressed(Button('Generate', id='generate')))
+        assert gen_called['called'] is True
+
+        save_called = {'called': False}
+        monkeypatch.setattr(edit_modal, '_save', lambda: save_called.update({'called': True}))
+        edit_modal.on_button_pressed(Button.Pressed(Button('Save', id='save')))
+        assert save_called['called'] is True

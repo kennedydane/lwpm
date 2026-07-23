@@ -48,11 +48,19 @@ class TestInitialization:
         with pytest.raises(AlreadyInitializedError):
             vault.initialize(salt=b's' * 16, verification_blob=b'v')
 
+    def test_get_config_uninitialized_raises(self, vault):
+        with pytest.raises(AlreadyInitializedError, match='vault is not initialized'):
+            vault.get_config()
+
 
 class TestCrud:
     def test_add_and_get_secret_blob(self, init_vault):
         add(init_vault, 'github', b'secret-blob')
         assert init_vault.get_secret_blob('github') == b'secret-blob'
+
+    def test_get_secret_blob_missing_raises_keyerror(self, init_vault):
+        with pytest.raises(KeyError):
+            init_vault.get_secret_blob('nonexistent')
 
     def test_get_credential_returns_fields_and_timestamps(self, init_vault):
         add(

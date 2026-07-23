@@ -1,0 +1,33 @@
+# Coverage Expansion Plan (Target: 99%+)
+
+- [x] **lwpm/generator.py** (100% coverage achieved)
+  - [x] Add test for `load_wordlist()` when wordlist resource is missing (`FileNotFoundError`).
+- [x] **lwpm/storage.py** (100% coverage achieved)
+  - [x] Add test for `get_config()` on uninitialized vault (`AlreadyInitializedError`).
+  - [x] Add test for `get_secret_blob()` with nonexistent key (`KeyError`).
+- [x] **lwpm/app.py** (100% coverage achieved)
+  - [x] Add test for consecutive `copy_to_clipboard_value()` calls stopping existing timer.
+  - [x] Add test for `main()` entry point with custom `LWPM_DB`.
+- [x] **lwpm/screens/confirm.py** (100% coverage achieved)
+  - [x] Add tests for `ConfirmModal` button presses (Yes/No) and escape cancellation.
+- [x] **lwpm/screens/auth.py** (100% coverage achieved)
+  - [x] Add test for submitting empty password.
+  - [x] Add test for submitting non-matching passwords during first-run setup.
+- [x] **lwpm/screens/vault.py** (100% coverage achieved)
+  - [x] Add test for `action_edit`, `action_delete`, `action_copy_password`, `action_copy_username` when list is empty.
+  - [x] Add test for `action_copy_username` when entry has a username vs when entry has no username.
+  - [x] Add test for `action_quit`.
+- [x] **lwpm/screens/change_password_modal.py** (100% coverage achieved)
+  - [x] Add test for incorrect current password error.
+  - [x] Add test for empty new password error.
+  - [x] Add test for mismatched new password error.
+  - [x] Add test for cancel button & escape key binding.
+  - [x] Add test for `vault.rekey()` exception handling.
+- [x] **lwpm/screens/entry_modal.py** (100% coverage achieved)
+  - [x] Add test for invalid integer input in generator options (`_int_value` fallback).
+  - [x] Add test for `action_generate()` with missing wordlist (`FileNotFoundError`).
+  - [x] Add test for `action_generate()` with no character classes enabled (`ValueError`).
+  - [x] Add test for save with empty name.
+  - [x] Add test for save with empty password.
+  - [x] Add test for save with duplicate name on add and on edit.
+  - [x] Add test for cancel button and escape key binding.

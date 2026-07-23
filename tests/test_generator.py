@@ -96,3 +96,20 @@ class TestLoadWordlist:
         # One plain lowercase a–z word per line — no number column, no
         # whitespace, apostrophes, or capitals.
         assert all(w == w.strip() and w.isalpha() and w.islower() for w in words)
+
+    def test_load_wordlist_file_not_found(self, monkeypatch):
+        generator.load_wordlist.cache_clear()
+
+        class FakeResource:
+            def joinpath(self, _name):
+                return self
+
+            def is_file(self):
+                return False
+
+        monkeypatch.setattr(generator.resources, 'files', lambda _pkg: FakeResource())
+        try:
+            with pytest.raises(FileNotFoundError, match='bundled wordlist'):
+                generator.load_wordlist()
+        finally:
+            generator.load_wordlist.cache_clear()
